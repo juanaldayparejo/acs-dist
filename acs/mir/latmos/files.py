@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import numpy as np
 
 ###############################################################################################
 
-def extract_order(filename,ordersel,irows,refalt=160.,iki_geometry=False,shift_row_edge=0,mcd_year=None):
+def extract_order(filename,ordersel,irows,refalt=180.,iki_geometry=False,shift_row_edge=0):
 
     """
     FUNCTION NAME : extract_order()
