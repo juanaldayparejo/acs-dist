@@ -125,6 +125,7 @@ def create_spectroscopy_lookup_class(
     Spectroscopy  = ans.Spectroscopy_0(ILBL=2)
     Spectroscopy.NGAS = len(lbl_tables)
 
+    Spectroscopy.ONLINE = True
     Spectroscopy.LOCATION = lbl_tables
     Spectroscopy.assess()
 
