@@ -554,7 +554,7 @@ def get_infos(filename):
     orders = calib_data['N'][0]           #Name of the orders 
     irow_low = calib_data['Y_LOW'][0]     #Suggested nominal lower row index
     irow_high = calib_data['Y_HIGH'][0]   #Suggested nominal higher row index
-    
+    hdul.close()
     return orders, irow_low, irow_high, date_utc_start, date_utc_end
 
 
