@@ -24,6 +24,7 @@ def create_measurement_forward_model(
     wavemin,
     wavemax,
     resolving_power=30000.,
+    nwave_per_fwhm = 5.,
     ):
     """
     FUNCTION NAME : create_measurement_forward_model()
@@ -56,7 +57,7 @@ def create_measurement_forward_model(
     
     midwave = (wavemin+wavemax)/2.
     fwhm = midwave / resolving_power
-    nconv = int((wavemax-wavemin)/fwhm * 5)
+    nconv = int((wavemax-wavemin)/fwhm * nwave_per_fwhm)
     vconv = np.linspace(wavemin,wavemax,nconv)
 
     
