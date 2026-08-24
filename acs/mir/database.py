@@ -16,6 +16,8 @@
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
+import acs
 
 acs_dir = Path(acs.__file__).resolve().parent
 database_file = (acs_dir.parent / "data" / "mir_database.csv").resolve()
