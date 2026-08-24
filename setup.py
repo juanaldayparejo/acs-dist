@@ -24,6 +24,7 @@ setup(
       'scipy',
       'joblib',
       'h5py',
+      'astropy'
     ],
     extras_require={
         'docs': ['sphinx', 'sphinx_rtd_theme'],
