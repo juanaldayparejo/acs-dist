@@ -17,6 +17,8 @@
 import numpy as np
 import archnemesis as ans
 
+location_lbl_tables_hitran24 = "/exomars/retrievals/nemesis/spectroscopy/LBLtables/ACSMIR/HITRAN24/"
+
 ###############################################################################################
 
 def create_spectroscopy_runtime_class(
@@ -130,3 +132,104 @@ def create_spectroscopy_lookup_class(
     Spectroscopy.assess()
 
     return Spectroscopy
+
+###############################################################################################
+
+def location_lls_acsmir_hitran24(ngas,gasID,isoID,Datadir=location_lbl_tables_hitran24,online_k=True):
+
+    """
+
+    FUNCTION NAME : location_lls_acsmir_hitran24()
+
+    DESCRIPTION : Create array with the location of the line-by-line tables for ACS MIR retrievals
+
+    INPUTS : 
+
+        ngas :: Number of active gases 
+        gasID(ngas) :: RADTRAN ID of each gas
+        isoID(ngas) :: RADTRAN isotopologue ID (0 for all isotopes)
+
+    OPTIONAL INPUTS: None
+            
+    OUTPUTS : 
+ 
+        location(ngas) :: Path to the line-by-line tables
+
+    CALLING SEQUENCE:
+
+        location = location_lls_acsmir(runname,ngas,gasID,isoID)
+
+    MODIFICATION HISTORY : Juan Alday (29/08/2019)
+
+    """
+
+    location = ['']*ngas
+    for i in range(ngas):
+        if gasID[i]==1:
+            strgas = 'H2O'
+        elif gasID[i]==2:
+            strgas = 'CO2'
+        elif gasID[i]==3:
+            strgas = 'O3' 
+        elif gasID[i]==4:
+            strgas = 'N2O'
+        elif gasID[i]==5:
+            strgas = 'CO'
+        elif gasID[i]==8:
+            strgas = 'NO'
+        elif gasID[i]==11:
+            strgas = 'NH3'
+        elif gasID[i]==13:
+            strgas = 'OH'
+        elif gasID[i]==14:
+            strgas = 'HF'
+        elif gasID[i]==15:
+            strgas = 'HCl'
+        elif gasID[i]==16:
+            strgas = 'HBr'
+        elif gasID[i]==18:
+            strgas = 'ClO'
+        elif gasID[i]==22:
+            strgas = 'N2'
+        elif gasID[i]==44:
+            strgas = 'HO2'
+        elif gasID[i]==131:
+            strgas = ' Cl2'
+        elif gasID[i]==132:
+            strgas = ' ClO2'
+        else:
+            sys.exit('error in write_lls_acsmir :: include gas name in this function')
+
+        if isoID[i]==0:
+            filename='ACSMIR_WN_'+strgas+'_HITRAN24'
+        else:
+            filename='ACSMIR_WN_'+strgas+'_iso'+str(isoID[i])+'_HITRAN24'
+
+
+        if ((gasID[i]==1) & (isoID[i]==1)):
+            filename='ACSMIR_WN_H2O_iso1_SR2022'
+
+        if ((gasID[i]==1) & (isoID[i]==2)):
+            filename='ACSMIR_WN_H2O_iso2_SR2022'
+
+        if ((gasID[i]==1) & (isoID[i]==3)):
+            filename='ACSMIR_WN_H2O_iso3_SR2022'
+
+        if ((gasID[i]==1) & (isoID[i]==4)):
+            filename='ACSMIR_WN_H2O_iso4_SR2022'
+
+        if ((gasID[i]==1) & (isoID[i]==5)):
+            filename='ACSMIR_WN_H2O_iso5_SR2022'
+
+        #Defining the extension of the tables
+        if online_k==True:
+            extension = '.h5'
+        else:
+            extension = '.lta'
+        filename = filename+extension
+
+        location[i] = Datadir+filename
+        
+    return location
+
+###############################################################################################
