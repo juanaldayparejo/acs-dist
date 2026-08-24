@@ -21,7 +21,7 @@ from pathlib import Path
 
 acs_dir = Path(acs.__file__).resolve().parent
 
-iki_geometry_dir = "/srv/workspace/data/tgo/acs/mir/iki/geometry/"
+iki_geometry_dir = "/exomars/data/external/tgo/acs/Geometry/"
 
 ###############################################################################################
 
@@ -163,7 +163,7 @@ def extract_order(filename,ordersel,irows,iki_geometry_dir=iki_geometry_dir):
     filename_geom3 = 'GEO_3_MIR_0B_'+Observation[7:29]+'_SWP.txt'    #Slit edge (lower part)
 
 
-    Geomdir = iki_geometry_dir+mtp+'/'+stp+"/"
+    Geomdir = iki_geometry_dir+mtp+'/'+stp+"/MIR_geometry_pr_tc/"
 
     nacq1,lat_tgo1,lon_tgo1,lat_obs1,lon_obs1,lat_subsolar1,lon_subsolar1,alt_tgo1,\
         tanhe_areoid1,tanhe_ellipsoid1,alt_topo_areoid1,lst_obs1 = acs.mir.iki.read_geometry(Geomdir+filename_geom1)
@@ -336,10 +336,10 @@ def extract_order(filename,ordersel,irows,iki_geometry_dir=iki_geometry_dir):
     Latobs_AveRowX = np.mean(Latobs,axis=1)
     Lonobs_AveRowX = np.mean(Lonobs,axis=1)
 
-    lat = database["Latitude"]
-    lon = database["Longitude"]
-    Ls = database["Ls"]
-    Loct = database["LST"]
+    lat = records["Latitude"].iloc[0]
+    lon = records["Longitude"].iloc[0]
+    Ls = records["Ls"].iloc[0]
+    Loct = records["LST"].iloc[0]
 
     return lat,lon,Ls,Loct,VCONV_AveRow[:,0],MEAS,ERRMEAS,Tanhe_Areoid
 

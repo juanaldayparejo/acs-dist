@@ -56,7 +56,7 @@ def extract_order(filename,ordersel,irows,refalt=180.,
 
     CALLING SEQUENCE:
 
-        lat,lon,Ls,Loct,Atmosphere,waven,trans,transerr,tanhe = process_observation_acsmir_latmos_order(filename,ordersel,irows,refalt=160.,iki_geometry=True)
+        lat,lon,Ls,Loct,waven,trans,transerr,tanhe = process_observation_acsmir_latmos_order(filename,ordersel,irows,refalt=160.,iki_geometry=True)
 
     MODIFICATION HISTORY : Juan Alday (02/08/2024)
 
