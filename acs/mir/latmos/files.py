@@ -15,10 +15,15 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+from acs.mir.iki.files import iki_geometry_dir
 
 ###############################################################################################
 
-def extract_order(filename,ordersel,irows,refalt=180.,iki_geometry=False,shift_row_edge=0):
+def extract_order(filename,ordersel,irows,refalt=180.,
+                iki_geometry=False,
+                iki_geometry_dir=iki_geometry_dir,
+                shift_row_edge=0,
+                ):
 
     """
     FUNCTION NAME : extract_order()
@@ -156,10 +161,9 @@ def extract_order(filename,ordersel,irows,refalt=180.,iki_geometry=False,shift_r
         #filename_geom2 = 'GEO_2_MIR_0B_'+Observation[7:29]+'_SWP.txt'    #Slit edge (upper part - not visible in images)
         #filename_geom3 = 'GEO_3_MIR_0B_'+Observation[7:29]+'_SWP.txt'    #Slit edge (lower part)
 
-        geomdir='/exomars/data/external/tgo/acs/Geometry/'
         mtpdir = 'MTP'+str(mtp).zfill(3)
         stpdir = 'STP'+str(stp).zfill(3)
-        Geomdir = geomdir+mtpdir+'/'+stpdir+'/MIR_geometry_pr_tc/'
+        Geomdir = iki_geometry_dir+mtpdir+'/'+stpdir+'/'
         
         read_files = True
         if os.path.isfile(Geomdir+'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P1_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'):
