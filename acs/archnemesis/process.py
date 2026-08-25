@@ -28,7 +28,7 @@ def process_observation_mir(data_path,observation,windows,irows,
                             latmos=True,iki=False,
                             ave_rows=True,
                             h_atm_res=1.,
-                            ils_calfile=None,
+                            ils_cal_path=None,
                             hitran24_tables=True,):
     """
     FUNCTION NAME : process_observation_mir()
@@ -47,8 +47,8 @@ def process_observation_mir(data_path,observation,windows,irows,
         latmos :: If True, it indicates the observation is one of the LATMOS FITS files
         iki :: If True, it indicates the observation is one of the IKI binary files
         ave_rows :: If True, the spectral from all the rows will be averaged
-        ils_calfile :: If it exists, it is meant to be a list with the paths to the calibration file created with the ils fitting procedure of the package
-                        the shape of the list is meant to be (nwin,nrow) if not averaging rows and (nwin,1) if averaging rows
+        ils_cal_path :: If it exists, it is meant to be the path to the directory where the ILS calibration files are stored. Within this base directory,
+                            it is expected to find folders for each window and for each row
         hitran24_tables :: If True, it indicates that the lbl tables are stored in the main HITRAN24 database
 
     OUTPUTS : 
@@ -134,7 +134,6 @@ def process_observation_mir(data_path,observation,windows,irows,
         AMP1_apr = acs.mir.spectral_windows.process_orders_info[Window]["AMP1_apr"]
         AMP2_apr = acs.mir.spectral_windows.process_orders_info[Window]["AMP2_apr"]
 
-
         lat,lon,Ls,LST,waven,trans,transerr,tanhe = acs.mir.iki.files.extract_order(data_path+filename,DifforSel,irows)
 
         #Filtering the spectral range of the window
@@ -143,21 +142,73 @@ def process_observation_mir(data_path,observation,windows,irows,
         trans = trans[iwave,:,:]
         transerr = transerr[iwave,:,:]
 
-        #Updating the ILS and spectral calibration if required
-        if ils_calfile is not None:
-            raise ValueError("error :: ils update has not been implemented yet")
-        else:
-            deldg = DELDG_apr
-            fwhm = FWHM_apr
-            amp1 = AMP1_apr
-            amp2 = AMP2_apr
-
         #Averaging rows if required
         if ave_rows is True:
             trans = np.mean(trans,axis=2, keepdims=True)
             transerr = np.sqrt(np.sum(transerr**2, axis=2, keepdims=True)) / nrow
             tanhe = np.mean(tanhe,axis=1, keepdims=True)
             nrow = 1
+
+
+        #Scaling up the retrieval errors as they are typically underestimated
+        #In this method we just calculate the uncertainties in each spectrum individually, but keeping the shape of the one at the top
+        #This will overestimate the uncertainties at first, but will likely be close to the real answer after scaling afterwards
+        transerr_new = np.zeros(trans.shape)
+        for irow in range(nrow):
+
+            for itan in range(trans.shape[1]):
+        
+                #Smoothing the transmission with a 10-pixel box kernel
+                kernel_size = 3
+                kernel = np.ones(kernel_size) / kernel_size
+                smoothed = np.convolve(trans[:,itan,irow], kernel, mode='same')
+
+                #Computing the uncertainty as the difference between the smoothed and non-smoothed
+                error = np.abs(smoothed-trans[:,itan,irow])
+
+                #For each case we scale the transmittance error (considering the centre of the order)
+                lim_pix = 20
+                transerr_new[:,itan,irow] = transerr[:,itan,irow] * np.mean(error[lim_pix:-lim_pix]/transerr[lim_pix:-lim_pix,itan,irow])
+
+        transerr = transerr_new
+
+
+        #Updating the ILS and spectral calibration if required
+        deldg = np.zeros(nrow)
+        fwhm = np.zeros(nrow)
+        amp1 = np.zeros(nrow)
+        amp2 = np.zeros(nrow)
+        if ils_cal_path is not None:
+
+            for irow in range(nrow):
+
+                if ave_rows is True:
+                    rowpath = "row-1"
+                else:
+                    rowpath = "row"+str(int(irows[irow]))
+
+                #Check if calibration file exists
+                cal_file_path = ils_cal_path + "/" + windows[iwin] + "/" + rowpath + "/" + observation + ".h5"
+                if os.path.exists(cal_file_path):
+                    WAVECONV,DELDG,FWHM,AMP1,AMP2 = acs.mir.iki.ils.read_calfile(cal_file_path)
+                    if len(WAVECONV)!=len(waven):
+                        raise ValueError("error :: the number of calibration wavenumbers does not match the convolution wavenumbers from the window")
+                    
+                    waven = WAVECONV
+                    deldg[irow] = DELDG
+                    fwhm[irow] = FWHM
+                    amp1[irow] = AMP1
+                    amp2[irow] = AMP2
+
+                else:
+                    print(cal_file_path)
+                    raise ValueError("error :: not calibration file found")
+
+        else:
+            deldg[:] = DELDG_apr
+            fwhm[:] = FWHM_apr
+            amp1[:] = AMP1_apr
+            amp2[:] = AMP2_apr
 
         #Calculating the mean transmission level in the window to assess the range of altitudes
         trans_level = np.mean(trans,axis=(0,2))
@@ -197,11 +248,10 @@ def process_observation_mir(data_path,observation,windows,irows,
             tanhe_level = tanhe_level[itangood]
             ngeom = len(itangood)
 
-
         #Creating measurement class 
         Measurements = []
         for irow in range(nrow):
-            Measurement = acs.archnemesis.measurement.create_measurement_mir(lat,lon,tanhe[:,irow],waven,trans[:,:,irow],transerr[:,:,irow],deldg,fwhm,amp1,amp2)
+            Measurement = acs.archnemesis.measurement.create_measurement_mir(lat,lon,tanhe[:,irow],waven,trans[:,:,irow],transerr[:,:,irow],deldg[irow],fwhm[irow],amp1[irow],amp2[irow])
             Measurements.append(Measurement)
         Measurements_all.append(Measurements)
 
@@ -259,7 +309,7 @@ def process_observation_mir(data_path,observation,windows,irows,
     #Writing some of the other classes
     #################################################################################################################
     
-    Scatter = ans.Scatter_0(NDUST=1,ISPACE=0,ISCAT=0)
+    Scatter = ans.Scatter_0(NDUST=0,ISPACE=0,ISCAT=0)
     Scatter.NWAVE = 2
     Scatter.WAVE = np.linspace(3000.,100000.,Scatter.NWAVE)
     Scatter.KEXT = np.ones((Scatter.NWAVE,Scatter.NDUST))
@@ -301,6 +351,9 @@ def process_observation_mir(data_path,observation,windows,irows,
     for iwin in range(nwin):
 
         os.chdir(out_path_meas)
+        if not os.path.exists(observation):
+            os.makedirs(observation)
+        os.chdir(observation) 
 
         #Changing folder to window level
         winpath = str(windows[iwin])
@@ -313,7 +366,7 @@ def process_observation_mir(data_path,observation,windows,irows,
             if ave_rows is True:
                 rowpath = str("row-1")
             else:
-                rowpath = "row"+str(int(irow))
+                rowpath = "row"+str(int(irows[irow]))
 
             if not os.path.exists(rowpath):
                 os.makedirs(rowpath)
@@ -376,10 +429,10 @@ def process_observation_mir(data_path,observation,windows,irows,
             if ave_rows is True:
                 rowpath = str("row-1")
             else:
-                rowpath = "row"+str(int(irow))
+                rowpath = "row"+str(int(irows[irow]))
             winpath = str(windows[iwin])
 
-            os.chdir(out_path_meas+"/"+winpath+"/"+rowpath)
+            os.chdir(out_path_meas+"/"+observation+"/"+winpath+"/"+rowpath)
 
             acs.archnemesis.variables.create_apr_file(observation,
                                                     Atmosphere, 

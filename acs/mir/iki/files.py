@@ -156,6 +156,10 @@ def extract_order(filename,ordersel,irows,iki_geometry_dir=iki_geometry_dir):
 
     mtp = records["mtp"].iloc[0]
     stp = records["stp"].iloc[0]
+    lat = records["Latitude"].iloc[0]
+    lon = records["Longitude"].iloc[0]
+    Ls = records["Ls"].iloc[0]
+    Loct = records["LST"].iloc[0]
 
     #Reading the geometry files
     filename_geom1 = 'GEO_1_MIR_0B_'+Observation[7:29]+'_SWP.txt'    #Slit centre
@@ -336,12 +340,65 @@ def extract_order(filename,ordersel,irows,iki_geometry_dir=iki_geometry_dir):
     Latobs_AveRowX = np.mean(Latobs,axis=1)
     Lonobs_AveRowX = np.mean(Lonobs,axis=1)
 
-    lat = records["Latitude"].iloc[0]
-    lon = records["Longitude"].iloc[0]
-    Ls = records["Ls"].iloc[0]
-    Loct = records["LST"].iloc[0]
+    #Estimating the uncertainty from the topmost altitudes
+    ############################################################################
 
-    return lat,lon,Ls,Loct,VCONV_AveRow[:,0],MEAS,ERRMEAS,Tanhe_Areoid
+    ncols = NCONV
+    transerr_top = np.ones((ncols,nrowsel)) * np.nan
+        
+    for irow in range(nrowsel):
+
+        iin = np.where( (Tanhe_Areoid_AveRowX>=Tanhe_Areoid_AveRowX.max()-15.) & (Tanhe_Areoid_AveRowX<=270.))[0]
+
+        ntop = len(iin)
+        vals = np.ones((ncols,ntop))
+        
+        for i in range(ntop):
+        
+            itan = iin[i]
+            
+            #Smoothing the transmission with a 10-pixel box kernel
+            kernel_size = 30
+            kernel = np.ones(kernel_size) / kernel_size
+            smoothed = np.convolve(MEAS[:,itan,irow], kernel, mode='same')
+        
+            #Computing the uncertainty as the difference between the smoothed and non-smoothed
+            error = np.abs(smoothed-MEAS[:,itan,irow])
+        
+            #For each value of the 
+            vals[:,i] = MEAS[:,itan,irow]/smoothed - 1.
+
+        mu = np.mean(vals,axis=1)
+        std = np.std(vals,axis=1)
+        error = np.max(np.abs(vals),axis=1)
+        
+        kernel_size = 15
+        kernel = np.ones(kernel_size) / kernel_size
+        smoothed = np.convolve(error, kernel, mode='same')
+        
+        inotnan_error = np.where(np.isnan(smoothed)==False)[0]
+        inotnan_wave = np.where(np.isnan(MEAS[:,itan,irow])==False)[0]
+        
+        transerr_top[inotnan_wave,irow] = np.interp(VCONV_AveRow[inotnan_wave,0],VCONV_AveRow[inotnan_error,0],smoothed[inotnan_error])
+
+    #Propagating the errors to the rest of the altitudes
+    ###################################################################################
+
+    errmeas_v1 = np.zeros(MEAS.shape)
+    errmeas_v2 = np.zeros(MEAS.shape)
+    transerr = np.zeros(MEAS.shape)
+    frac = 0.5 #fraction to be applied between the v1 and v2 methods for propagation of the errors in the transmission level
+
+    for irow in range(nrowsel):
+
+        for itan in range(MEAS.shape[1]):
+        
+            errmeas_v1[:,itan,irow] = np.abs(transerr_top[:,irow] * np.sqrt( (1.+MEAS[:,itan,irow]**2.)/2. ))
+            errmeas_v2[:,itan,irow] = np.abs(transerr_top[:,irow] * np.sqrt( MEAS[:,itan,irow]*(1.+MEAS[:,itan,irow]**2.)/2. ))
+            transerr[:,itan,irow] = frac*errmeas_v1[:,itan,irow] + (1.-frac)*errmeas_v2[:,itan,irow]
+
+
+    return lat,lon,Ls,Loct,VCONV_AveRow[:,0],MEAS,transerr,Tanhe_Areoid
 
 
 ###############################################################################################

@@ -21,6 +21,7 @@ from pathlib import Path
 import archnemesis as ans
 import scipy
 import sys,os
+import glob
 
 ##############################################################################################
 ##############################################################################################
@@ -61,6 +62,21 @@ def fit_ils_ave_rows(ACS_datadir,Observation,Window,Rows,Caldir,mintrans=0.1,hse
         MODIFICATION HISTORY : Juan Alday (15/06/2024)
     """
     
+    #Finding corresponding file
+
+    curr = os.getcwd()
+    os.chdir(ACS_datadir)
+    filenames = glob.glob("*"+Observation+"*")
+    os.chdir(curr)
+
+    if len(filenames) > 1:
+        print(filenames)
+        raise ValueError("error :: several files were found corresponding to the required observation")
+    if len(filenames) == 0:
+        raise ValueError("error :: no files were found corresponding to the required observation")
+
+    filename = filenames[0]
+
     #Reading some parameters specific for this window
     ########################################################################################
     
@@ -90,7 +106,7 @@ def fit_ils_ave_rows(ACS_datadir,Observation,Window,Rows,Caldir,mintrans=0.1,hse
     IRows = np.array(Rows)
     refalt = 180.
     
-    latX,lonX,LsX,LoctX,VCONVX,MEASX,ERRMEASX,Tanhe_AreoidX = acs.mir.iki.files.extract_order(ACS_datadir+Observation,DifforSel,IRows)
+    latX,lonX,LsX,LoctX,VCONVX,MEASX,ERRMEASX,Tanhe_AreoidX = acs.mir.iki.files.extract_order(ACS_datadir+filename,DifforSel,IRows)
 
     Tanhe_Areoid_AveRowX = np.mean(Tanhe_AreoidX,axis=1) 
     MEAS_AveRowX = np.mean(MEASX,axis=2)
@@ -573,10 +589,10 @@ def fit_ils_ave_rows(ACS_datadir,Observation,Window,Rows,Caldir,mintrans=0.1,hse
     print('saving file for Row '+str(-1))
 
     #Creating folder if it does not exist
-    if os.path.exists(Caldir+'Calibration_Files/'+Window+'/ROW'+str(-1))==False:
-        os.mkdir(Caldir+'Calibration_Files/'+Window+'/ROW'+str(-1))
+    if os.path.exists(Caldir+'Calibration_Files/'+Window+'/row'+str(-1))==False:
+        os.mkdir(Caldir+'Calibration_Files/'+Window+'/row'+str(-1))
     
-    filen = Caldir+'Calibration_Files/'+Window+'/ROW'+str(-1)+'/'+Observation+'.h5'
+    filen = Caldir+'Calibration_Files/'+Window+'/row'+str(-1)+'/'+Observation+'.h5'
 
     AMP1_fit = AAMP1_fit
     AMP2_fit = AAMP2_fit
@@ -1084,6 +1100,25 @@ def write_calfile(filen,waveconv,DELDG,FWHM,AMP1,AMP2,DELDG_err=None,FWHM_err=No
 
     hf.close()
     
+##############################################################################################
+
+def read_calfile(filen):
+    '''
+    Read the calibration results from HDF5 file
+    '''
+
+    import h5py
+    
+    hf = h5py.File(filen, 'r') 
+    WAVECONV = np.array(hf.get('VCONV_CALIBRATED'))
+    DELDG = np.array(hf.get('DELDG'))
+    FWHM = np.array(hf.get('FWHM'))
+    AMP1 = np.array(hf.get('AMP1'))
+    AMP2 = np.array(hf.get('AMP2'))
+    hf.close()
+
+    return WAVECONV,DELDG,FWHM,AMP1,AMP2
+
 ##############################################################################################
 
 def construct_dVm(pixx,C0,C1,C2):
