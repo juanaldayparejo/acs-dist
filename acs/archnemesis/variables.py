@@ -220,9 +220,61 @@ def create_apr_file(runname,
 
             write_apr_prof(filename,Atmosphere,gasid,isoid,cont_err[igas],clen=cont_clen[igas],ScaleFactor=True)
 
+
+
+
     #Going through the retrieval of the baseline
     if retrieve_baseline is True:
-        raise ValueError("error while writing baseline retrieval in .apr file :: This functionality has not yet been implemented")
+        
+        fapr.write('\t %i \t %i \t %i \n' % (231,0,231))
+        fapr.write('transapr.dat \n')
+
+        #Getting an estimate number for the continuum
+        ngeom = Measurement.NGEOM
+        tau = np.zeros(ngeom)
+        for it in range(ngeom):
+            tau[it] = np.mean(Measurement.MEAS[0:Measurement.NCONV[it],it])
+
+        #Defining number of windows, measurements and polynomial degree
+        ftau = open('transapr.dat','w')
+        ftau.write('\t '+str(ngeom)+' \t '+str(baseline_degree)+' \n')
+
+        if baseline_degree == 0:
+
+            data = np.zeros((2,ngeom))
+            data[0,:] = tau
+            data[1,:] = tau * 0.5
+            for it in range(ngeom):
+                ftau.write('\t %10.5e \t %10.5e \n' % (data[0,it],data[1,it]))
+
+        elif baseline_degree == 1:
+
+            data = np.zeros((4,ngeom))
+            for it in range(ngeom):
+                
+                data[0,it] = tau[it]          #A0
+                data[1,it] = tau[it]*0.5      #A0_ERR
+                data[2,it] = 0.001 / (Measurement.VCONV[Measurement.NCONV[0]-1,0]-Measurement.VCONV[0,0])         #A1
+                data[3,it] = 0.05 / (Measurement.VCONV[Measurement.NCONV[0]-1,0]-Measurement.VCONV[0,0])        #A1_ERR
+                
+                ftau.write('\t %10.5e \t %10.5e \t %10.5e \t %10.5e \n' % (data[0,it],data[1,it],data[2,it],data[3,it]))
+
+        elif baseline_degree==2:
+
+            data = np.zeros((6,ngeom))
+            for it in range(ngeom):
+                data[0,it] = tau[it]          #A0
+                data[1,it] = tau[it]*0.5      #A0_ERR
+                data[2,it] = 0.01 / (Measurement.VCONV[Measurement.NCONV[0]-1,0]-Measurement.VCONV[0,0])         #A1
+                data[3,it] = 0.05 / (Measurement.VCONV[Measurement.NCONV[0]-1,0]-Measurement.VCONV[0,0])        #A1_ERR
+                data[4,it] = -0.01 / (Measurement.VCONV[Measurement.NCONV[0]-1,0]-Measurement.VCONV[0,0])**2.    #A2
+                data[5,it] = 0.05 / (Measurement.VCONV[Measurement.NCONV[0]-1,0]-Measurement.VCONV[0,0])**2.    #A2_ERR
+                
+                ftau.write('\t %10.5e \t %10.5e \t %10.5e \t %10.5e \t %10.5e \t %10.5e \n' % (data[0,it],data[1,it],data[2,it],data[3,it],data[4,it],data[5,it]))
+        
+        ftau.close()
+
+
 
     #Going through the temperature retrieval
     if retrieve_temp is True:

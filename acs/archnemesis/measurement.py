@@ -89,3 +89,88 @@ def create_measurement_forward_model(
     Measurement.edit_TANHE(TANHEp)
 
     return Measurement
+
+#####################################################################################################################################################
+
+def create_measurement_mir(
+    lat,lon,
+    tanhe,
+    vconv,meas,errmeas,
+    deldg,fwhm,amp1,amp2,
+    ):
+    """
+    FUNCTION NAME : create_measurement_forward_model()
+
+    DESCRIPTION : Function to create the archNEMESIS Measurement class for a forward model case
+                    (i.e., not including real ACS data)
+
+    INPUTS : 
+
+        lat :: Latitude of the tangent point
+        lon :: Longitude of the tangent point
+        tanhe(ngeom) :: Tangent altitude above the surface (km)
+        vconv(nconv) :: Convolution wavenumbers (cm-1)
+        meas(nconv,ngeom) :: Measured transmission spectra
+        errmeas(nconv,ngeom) :: Uncertainties in measured transmission spectra
+        deldg :: Offset between the two Gaussians defining the ILS (according to model 230 in NEMESIS)
+        fwhm :: FWHM of the Gaussians defining the ILS (according to model 230 in NEMESIS)
+        amp1 :: Amplitude of the second Gaussian at the first wavenumber defining the ILS (according to model 230 in NEMESIS)
+        amp2 :: Amplitude of the second Gaussian at the last wavenumber defining the ILS (according to model 230 in NEMESIS)
+
+    OUTPUTS : 
+ 
+        Measurement :: archNEMESIS Measurement class
+
+    CALLING SEQUENCE:
+
+        Measurement = create_measurement_mir(
+                        lat,lon,
+                        tanhe,
+                        vconv,meas,errmeas,
+                        deldg,fwhm,amp1,amp2,
+                        )
+
+    MODIFICATION HISTORY : Juan Alday (18/06/2026)
+
+    """
+
+    Measurement = ans.Measurement_0()
+    Measurement.ISPACE = 0      #Wavenumbers 
+    Measurement.FWHM = -0.1 
+    Measurement.NGEOM = tanhe.shape[0]
+    Measurement.LATITUDE = lat
+    Measurement.LONGITUDE = lon
+    Measurement.NCONV = np.zeros(Measurement.NGEOM,dtype='int32') + vconv.shape[0]
+    
+    vconvx = np.zeros((vconv.shape[0],Measurement.NGEOM))
+    vconvx[:,:] = vconv[:,np.newaxis]
+
+    Measurement.edit_VCONV(vconvx)
+    Measurement.edit_MEAS(meas)
+    Measurement.edit_ERRMEAS(errmeas)
+    Measurement.NAV = np.ones(Measurement.NGEOM,dtype='int32')
+    Measurement.edit_FLAT(np.zeros((Measurement.NGEOM,1))+lat)
+    Measurement.edit_FLON(np.zeros((Measurement.NGEOM,1))+lon)
+    Measurement.edit_WGEOM(np.zeros((Measurement.NGEOM,1))+1.0)
+    Measurement.edit_EMISS_ANG(np.zeros((Measurement.NGEOM,1))-1.0)  #Negative emission angle to indicate limb-viewing observation
+    Measurement.edit_SOL_ANG(np.zeros((Measurement.NGEOM,1))+90.) 
+    Measurement.edit_AZI_ANG(np.zeros((Measurement.NGEOM,1))+0.)
+    TANHEp = np.zeros((Measurement.NGEOM,1))
+    TANHEp[:,0] = tanhe
+    Measurement.edit_TANHE(TANHEp)
+
+
+    #Building the ILS model
+    NWindows = 1
+    PAR_FIL = np.zeros((7,1))
+    PAR_FIL[0,0] = 1.0e-8
+    PAR_FIL[1,0] = 1.0e-8
+    PAR_FIL[2,0] = 1.0e-8
+    PAR_FIL[3,0] = deldg
+    PAR_FIL[4,0] = fwhm
+    PAR_FIL[5,0] = amp1
+    PAR_FIL[6,0] = amp2
+    Measurement = ans.Models[230].calculate(Measurement,NWindows,[Measurement.VCONV[0,0]],[Measurement.VCONV[-1,0]],PAR_FIL)
+
+
+    return Measurement

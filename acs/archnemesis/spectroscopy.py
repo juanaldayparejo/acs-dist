@@ -233,3 +233,39 @@ def location_lls_acsmir_hitran24(ngas,gasID,isoID,Datadir=location_lbl_tables_hi
     return location
 
 ###############################################################################################
+
+def create_spectroscopy_lookup_hitran24(
+    ngas,gasID,isoID,Datadir=location_lbl_tables_hitran24,online_k=True
+    ):
+
+    """
+    FUNCTION NAME : create_spectroscopy_lookup_hitran24()
+
+    DESCRIPTION : Function to create the archNEMESIS Spectroscopy class based on the 
+                    HITRAN24 format
+
+    INPUTS : 
+
+        ngas :: Number of active gases 
+        gasID(ngas) :: RADTRAN ID of each gas
+        isoID(ngas) :: RADTRAN isotopologue ID (0 for all isotopes)
+
+    OPTIONAL INPUTS: None
+            
+    OUTPUTS : 
+ 
+        Spectroscopy :: Spectroscopy class
+
+    CALLING SEQUENCE:
+
+        Spectroscopy = create_spectroscopy_lookup_hitran24(runname,ngas,gasID,isoID)
+
+    MODIFICATION HISTORY : Juan Alday (18/06/2026)
+
+    """
+
+    lbl_tables = location_lls_acsmir_hitran24(ngas,gasID,isoID,Datadir=Datadir,online_k=online_k)
+
+    Spectroscopy = create_spectroscopy_lookup_class(lbl_tables)
+
+    return Spectroscopy
