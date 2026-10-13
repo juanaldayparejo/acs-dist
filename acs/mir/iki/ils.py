@@ -106,7 +106,7 @@ def fit_ils_ave_rows(ACS_datadir,Observation,Window,Rows,Caldir,mintrans=0.1,hse
     IRows = np.array(Rows)
     refalt = 180.
     
-    latX,lonX,LsX,LoctX,VCONVX,MEASX,ERRMEASX,Tanhe_AreoidX = acs.mir.iki.files.extract_order(ACS_datadir+filename,DifforSel,IRows)
+    latX,lonX,LsX,LoctX,VCONVX,MEASX,ERRMEASX,Tanhe_AreoidX = acs.mir.latmos.files.extract_order(ACS_datadir+filename,DifforSel,IRows)
 
     Tanhe_Areoid_AveRowX = np.mean(Tanhe_AreoidX,axis=1) 
     MEAS_AveRowX = np.mean(MEASX,axis=2)
@@ -605,6 +605,9 @@ def fit_ils_ave_rows(ACS_datadir,Observation,Window,Rows,Caldir,mintrans=0.1,hse
     return finished
 
 
+#####################################################################################################################################
+
+
 
 ##############################################################################################
 ##############################################################################################
@@ -793,11 +796,6 @@ def fm_calibrate_multi(Measurement, WAVE, TAUGAS_PATH, params):
     BAMP1  = params['BAMP1']
     BAMP2  = params['BAMP2']
 
-    # Wavenumber calibration parameters for this geometry
-    C0 = params['C0']
-    C1 = params['C1']
-    C2 = params['C2']
-
     modeled_spectra = []
 
     for i in range(Measurement.NGEOM):
@@ -810,9 +808,6 @@ def fm_calibrate_multi(Measurement, WAVE, TAUGAS_PATH, params):
             TAUTOT += TAUGAS_PATH[:, g] * scale
 
         TRANS = np.exp(-TAUTOT)
-
-        pixx = np.arange(0, Measurement.NCONV[i], 1)
-        Measurement.VCONV[:, i] = construct_vconv(pixx, C0, 0.0, C1, C2)
 
         AMP1 = AAMP1 + BAMP1 * i  #Calculating the ILS for this specific row
         AMP2 = AAMP2 + BAMP2 * i  #Calculating the ILS for this specific row
@@ -1119,47 +1114,6 @@ def read_calfile(filen):
 
     return WAVECONV,DELDG,FWHM,AMP1,AMP2
 
-##############################################################################################
-
-def construct_dVm(pixx,C0,C1,C2):
-    
-    dVm = C0 + C1*pixx + C2*(pixx)**2.
-    
-    return dVm
-        
-##############################################################################################
-
-def construct_vconv(pixx,v0,C0,C1,C2):
-    
-    iCENTER = np.argmin(np.abs(pixx))
-    
-    dVm = construct_dVm(pixx,C0,C1,C2)
-    
-    vconv = np.zeros(len(pixx))
-    vconv[iCENTER] = v0
-    vconv[:] = v0 + dVm
-    
-    return vconv
-
-##############################################################################################
-
-def correlate_spectra(pixx,v0,C1,C2,meas,smodel,normalise=True):
-    
-    newconv = construct_vconv(pixx,v0,0.0,C1,C2)
-    model = smodel(newconv)
-    
-    #Fitting polynomial function to both measured and modelled spectra to normalise them
-    if normalise==True:
-        ndeg = 2
-        px = np.polyfit(pixx,meas,ndeg)
-        pol = px[2] + px[1]*pixx + px[0]*(pixx)**2.
-
-        px = np.polyfit(pixx,model,ndeg)
-        pol2 = px[2] + px[1]*pixx + px[0]*(pixx)**2.
-    
-    corr = np.correlate(meas-pol,model-pol2)[0]
-    
-    return corr
 
 ##############################################################################################
 ##############################################################################################

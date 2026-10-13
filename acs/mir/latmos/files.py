@@ -15,7 +15,9 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+import acs
 from acs.mir.iki.files import iki_geometry_dir
+import sys,os
 
 ###############################################################################################
 
@@ -163,7 +165,9 @@ def extract_order(filename,ordersel,irows,refalt=180.,
 
         mtpdir = 'MTP'+str(mtp).zfill(3)
         stpdir = 'STP'+str(stp).zfill(3)
-        Geomdir = iki_geometry_dir+mtpdir+'/'+stpdir+'/'
+        
+        #Trying both with MIR_geometry_pr_tc and without
+        Geomdir = iki_geometry_dir+mtpdir+'/'+stpdir+'/MIR_geometry_pr_tc/'
         
         read_files = True
         if os.path.isfile(Geomdir+'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P1_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'):
@@ -176,17 +180,36 @@ def extract_order(filename,ordersel,irows,refalt=180.,
             file_slit_centre = 'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P4_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
             file_slit_bottom = 'GEO_3_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P4_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
         else:
-            print(Geomdir+'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P2_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt', 'does not exist')
             read_files = False
+
+
+        if read_files is False:
+            Geomdir = iki_geometry_dir+mtpdir+'/'+stpdir+'/'
+            read_files = True
+            if os.path.isfile(Geomdir+'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P1_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'):
+                file_slit_centre = 'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P1_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
+                file_slit_bottom = 'GEO_3_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P1_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
+            elif os.path.isfile(Geomdir+'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P2_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'):
+                file_slit_centre = 'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P2_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
+                file_slit_bottom = 'GEO_3_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P2_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
+            elif os.path.isfile(Geomdir+'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P4_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'):
+                file_slit_centre = 'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P4_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
+                file_slit_bottom = 'GEO_3_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P4_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt'
+            else:
+                read_files = False
             
+        if read_files is False:
+            print(Geomdir+'GEO_1_MIR_0B_ORB'+str(orbit).zfill(6)+'_N'+str(sequence)+'_'+IEflag+'_P2_'+str(position).zfill(2)+'_'+FPflag+'_SWP.txt', 'does not exist')
+
         if read_files is True:
             correct_boresight = True   #We apply the correction to the boresight vector
             print('Using IKI geometry')
+
             nacq1,lat_tgo1,lon_tgo1,lat_cen,lon_cen,lat_subsolar_cen,lon_subsolar_cen,alt_tgo_cen,\
-                tanhe_areoid_cen,tanhe_ellipsoid_cen,alt_topo_areoid_cen,lst_cen = ps.acs.geometry.read_geometry_pr_tc(Geomdir+file_slit_centre,correct_boresight=correct_boresight)
+                tanhe_areoid_cen,tanhe_ellipsoid_cen,alt_topo_areoid_cen,lst_cen = acs.mir.iki.read_geometry(Geomdir+file_slit_centre,correct_boresight=correct_boresight)
 
             nacq3,lat_tgo3,lon_tgo3,lat_bottom,lon_bottom,lat_subsolar_bottom,lon_subsolar_bottom,alt_tgo_bottom,\
-                tanhe_areoid_bottom,tanhe_ellipsoid_bottom,alt_topo_areoid_bottom,lst_bottom = ps.acs.geometry.read_geometry_pr_tc(Geomdir+file_slit_bottom,correct_boresight=correct_boresight)
+                tanhe_areoid_bottom,tanhe_ellipsoid_bottom,alt_topo_areoid_bottom,lst_bottom = acs.mir.iki.read_geometry(Geomdir+file_slit_bottom,correct_boresight=correct_boresight)
 
             if( (nacq1==nacq+1) or (nacq1==nacq)):
                 lat_cen = lat_cen[0:nacq]
@@ -240,7 +263,7 @@ def extract_order(filename,ordersel,irows,refalt=180.,
     lat_use = np.zeros((nacq,nrowssel))
     lon_use = np.zeros((nacq,nrowssel))
     lst_use = np.zeros((nacq,nrowssel))
-    
+
     if nrowssel>0:
 
         for irow in range(nrowssel):
@@ -502,6 +525,50 @@ def check_rows_order(filename,ordersel,irows,No_error = False):
     exist=True
     return exist,nrows_use
 
+
+###############################################################################################
+
+def get_info_from_name(Observation):
+
+    """
+    FUNCTION NAME : get_info_from_name()
+
+    DESCRIPTION : Extract information regarding the observation from the name of the file
+    
+    INPUTS : 
+
+        Observation :: Name of the observation (e.g. "MIR_2B_ORB001941_N1_I_P1_00B00_F")
+
+    OPTIONAL INPUTS: None
+            
+    OUTPUTS : 
+ 
+        orbit :: Orbit number
+        num :: Sequence number (N1 or N2)
+        ieflag :: I/E flag (Ingress or Egress)
+        fpflag :: FP flag (Partial or full frame)
+        position :: Secondary grating position
+
+    CALLING SEQUENCE:
+
+        orbit,num,ieflag,fpflag,position = acs.latmos.get_info_from_name(Observation)
+
+    MODIFICATION HISTORY : Juan Alday (09/10/2026)
+    """
+
+    orbit = int(Observation[10:16])
+    num = int(Observation[18:19])
+    ieflag = Observation[20]
+    fpflag = Observation[-1]
+    position = Observation[-7:-2]
+
+    if position == "00B00":
+        position = 11
+    else:
+        raise ValueError('error :: position '+str(position)+' is not valid in observation '+Observation)
+    
+    return orbit,num,ieflag,fpflag,position
+    
 
 ###############################################################################################
  
