@@ -18,8 +18,6 @@ import numpy as np
 import archnemesis as ans
 import acs
 
-
-
 ###############################################################################################
 
 def write_apr_prof(filename,Atmosphere,varID,var2ID,error,clen=1.5,ScaleFactor=True,xprof=None):
