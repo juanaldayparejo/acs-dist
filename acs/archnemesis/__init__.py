@@ -6,3 +6,4 @@ from .files import *
 from .process import *
 from .retrieval import *
 from .retrieval_los import *
+from .mir import *
