@@ -130,6 +130,24 @@ def extract_order(filename,ordersel,irows,refalt=180.,
     areoid_bottom = geob_hdu.data['SUB_ARE'][0]   #areoid radius at sub-tangent point (km)
     mola_bottom = geob_hdu.data['SUB_MOLA'][0]   #MOLA radius at sub-tangent point (km)
 
+    #Checking that the number of acquisitions agrees in both spectra and geometry
+    if nacq != len(alt_bottom):
+        if len(alt_bottom) == nacq + 1:
+
+            index = slice(1, len(alt_bottom))  # Drop the first acquisition
+            # index = slice(0, nacq)       # Drop the last acquisition
+
+            sza_bottom = sza_bottom[index]
+            alt_bottom = alt_bottom[index]
+            lat_bottom = lat_bottom[index]
+            lon_bottom = lon_bottom[index]
+            lst_bottom = lst_bottom[index]
+            ellips_bottom = ellips_bottom[index]
+            areoid_bottom = areoid_bottom[index]
+            mola_bottom = mola_bottom[index]
+        else:
+            raise ValueError("error : number of points in geometry (bottom) and spectra does not match")
+
     tanhe_ellipsoid_bottom = (alt_bottom +  mola_bottom) - ellips_bottom  #tangent altitude wrt ellipsoid (km)
     tanhe_areoid_bottom = (alt_bottom +  mola_bottom) - areoid_bottom  #tangent altitude wrt ellipsoid (km)
 
@@ -146,8 +164,26 @@ def extract_order(filename,ordersel,irows,refalt=180.,
     areoid_cen = geoc_hdu.data['SUB_ARE'][0]   #areoid radius at sub-tangent point (km)
     mola_cen = geoc_hdu.data['SUB_MOLA'][0]   #MOLA radius at sub-tangent point (km)
 
+    #Checking that the number of acquisitions agrees in both spectra and geometry
+    if nacq != len(alt_cen):
+        if len(alt_cen) == nacq + 1:
+            index = slice(1, len(alt_cen))  # Drop the first acquisition
+            # index = slice(0, nacq)       # Drop the last acquisition
+
+            sza_cen = sza_cen[index]
+            alt_cen = alt_cen[index]
+            lat_cen = lat_cen[index]
+            lon_cen = lon_cen[index]
+            lst_cen = lst_cen[index]
+            ellips_cen = ellips_cen[index]
+            areoid_cen = areoid_cen[index]
+            mola_cen = mola_cen[index]
+        else:
+            raise ValueError("error : number of points in geometry (centre) and spectra does not match")
+
     tanhe_ellipsoid_cen = (alt_cen +  mola_cen) - ellips_cen  #tangent altitude wrt ellipsoid (km)
     tanhe_areoid_cen = (alt_cen +  mola_cen) - areoid_cen  #tangent altitude wrt areoid (km)
+
 
     #Reading GEO_SAT
     SUN_DIST = hdul['GEO_SAT'].header['SUN_DIST']   #Sun-Mars distance (km)
@@ -211,7 +247,20 @@ def extract_order(filename,ordersel,irows,refalt=180.,
             nacq3,lat_tgo3,lon_tgo3,lat_bottom,lon_bottom,lat_subsolar_bottom,lon_subsolar_bottom,alt_tgo_bottom,\
                 tanhe_areoid_bottom,tanhe_ellipsoid_bottom,alt_topo_areoid_bottom,lst_bottom = acs.mir.iki.read_geometry(Geomdir+file_slit_bottom,correct_boresight=correct_boresight)
 
-            if( (nacq1==nacq+1) or (nacq1==nacq)):
+            if(nacq1==nacq+1):
+                index = slice(1, nacq1)  # Drop the first acquisition
+                # index = slice(0, nacq)       # Drop the last acquisition
+                lat_cen = lat_cen[index]
+                lon_cen = lon_cen[index]
+                lst_cen = lst_cen[index]
+                lat_bottom = lat_bottom[index]
+                lon_bottom = lon_bottom[index]
+                lst_bottom = lst_bottom[index]
+                tanhe_areoid_cen = tanhe_areoid_cen[index]
+                tanhe_ellipsoid_cen = tanhe_ellipsoid_cen[index]
+                tanhe_areoid_bottom = tanhe_areoid_bottom[index]
+                tanhe_ellipsoid_bottom = tanhe_ellipsoid_bottom[index]
+            elif (nacq1 == nacq):
                 lat_cen = lat_cen[0:nacq]
                 lon_cen = lon_cen[0:nacq]
                 lst_cen = lst_cen[0:nacq]
