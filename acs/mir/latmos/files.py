@@ -269,11 +269,11 @@ def extract_order(filename,ordersel,irows,refalt=180.,
         for irow in range(nrowssel):
             trans_use[:,:,irow] = trans[:,irow_low[iorder]+irows[irow],:].T
 
-            tanhe_ellipsoid_use[:,irow] = tanhe_ellipsoid_bottom[:] + tanhe_ellipsoid_per_row[:] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
-            tanhe_areoid_use[:,irow] = tanhe_areoid_bottom[:] + tanhe_areoid_per_row[:] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
-            lat_use[:,irow] = lat_bottom[:] + lat_per_row[:] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
-            lon_use[:,irow] = lon_bottom[:] + lon_per_row[:] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
-            lst_use[:,irow] = lst_bottom[:] + lst_per_row[:] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
+            tanhe_ellipsoid_use[:,irow] = tanhe_ellipsoid_bottom[0:nacq] + tanhe_ellipsoid_per_row[0:nacq] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
+            tanhe_areoid_use[:,irow] = tanhe_areoid_bottom[0:nacq] + tanhe_areoid_per_row[0:nacq] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
+            lat_use[:,irow] = lat_bottom[0:nacq] + lat_per_row[0:nacq] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
+            lon_use[:,irow] = lon_bottom[0:nacq] + lon_per_row[0:nacq] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
+            lst_use[:,irow] = lst_bottom[0:nacq] + lst_per_row[0:nacq] * (irow_low[iorder] + irows[irow] - irow_slitbottom[iorder])
     
     else:
         
