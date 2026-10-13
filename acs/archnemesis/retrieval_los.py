@@ -84,6 +84,7 @@ def run_retrieval(outname,
     SPECMOD = np.zeros((NCONV,NGEOM))
     BASELINE = np.zeros((NCONV,NGEOM))
     LOSDENS_TOT = np.zeros(NGEOM)
+    VMR_apr = np.zeros((NGEOM,Spectroscopy.NGAS))
     VMR_ret = np.zeros((NGEOM,Spectroscopy.NGAS))
     VMR_reterr = np.zeros((NGEOM,Spectroscopy.NGAS))
 
@@ -98,7 +99,8 @@ def run_retrieval(outname,
     #Performing the retrieval in each tangent height
     ##################################################################
     
-    SPECMOD,SPECMOD_sigma,BASELINE,LOSDENS_TOT,VMR_ret,VMR_reterr = retrieval_LOS_all(Atmosphere,Measurement,Spectroscopy,ID_ret,ISO_ret,ndegree=ndegree,fourierdegree=fourierdegree,fit_baseline_automatic=fit_baseline_automatic,use_errmeas=use_errmeas)
+    SPECMOD,SPECMOD_sigma,BASELINE,LOSDENS_TOT,VMR_apr,VMR_ret,VMR_reterr = retrieval_LOS_all(Atmosphere,Measurement,Spectroscopy,ID_ret,ISO_ret,ndegree=ndegree,fourierdegree=fourierdegree,fit_baseline_automatic=fit_baseline_automatic,use_errmeas=use_errmeas)
+    VMR_apr = VMR_apr.T
     VMR_ret = VMR_ret.T
     VMR_reterr = VMR_reterr.T
 
@@ -150,6 +152,9 @@ def run_retrieval(outname,
     dset = f.create_dataset('LOSDENS_TOT',data=LOSDENS_TOT)
     dset.attrs['title'] = "Line-of-sight density at each tangent height (m-2)"
     
+    dset = f.create_dataset('VMR_apr',data=VMR_apr)
+    dset.attrs['title'] = "A priori volume mixing ratio of fitted species"
+
     dset = f.create_dataset('VMR_ret',data=VMR_ret)
     dset.attrs['title'] = "Volume mixing ratio of fitted species"
     
@@ -317,6 +322,7 @@ def retrieval_LOS_all(Atmosphere,Measurement,Spectroscopy,
     BASELINEx = np.zeros(Measurement.MEAS.shape)
     SPECMOD_sigma = np.full((*SPECMODx.shape, ngas_vary, 3), np.nan)
     
+    VMR_apr = np.full((ngas_vary, Measurement.NGEOM), np.nan)
     VMR_ret = np.full((ngas_vary, Measurement.NGEOM), np.nan)
     VMR_reterr = np.full((ngas_vary, Measurement.NGEOM), np.nan)
     
@@ -378,6 +384,7 @@ def retrieval_LOS_all(Atmosphere,Measurement,Spectroscopy,
         # Retrieved abundances and uncertainties for varied gases only
         vmr_reference = VMR_ACT_PATH[igas_vary, iGEOM]
 
+        VMR_apr[:, iGEOM] = vmr_reference
         VMR_ret[:, iGEOM] = SC_GAS_ret * vmr_reference
         VMR_reterr[:, iGEOM] = SC_GAS_reterr * np.abs(vmr_reference)
 
@@ -426,7 +433,20 @@ def retrieval_LOS_all(Atmosphere,Measurement,Spectroscopy,
             **model_inputs, **baseline_parameters
         )
 
-    return SPECMODx,SPECMOD_sigma,BASELINEx,LOSDENS_TOT_PATH,VMR_ret,VMR_reterr
+    #Placing in order the retrieved gases
+    igas_order = np.zeros(len(ID_ret),dtype='int32')
+    for igas in range(len(ID_ret)):
+        igas_order[igas] = np.where( (Spectroscopy.ID==ID_ret[igas]) & (Spectroscopy.ISO==ISO_ret[igas]) )[0][0]
+
+    #Putting them in order from 0 to len(ID_ret)-1
+    igas_order = np.argsort(igas_order)
+
+    VMR_ret = VMR_ret[igas_order,:]
+    VMR_reterr = VMR_reterr[igas_order,:]
+    VMR_apr = VMR_apr[igas_order,:]
+    SPECMOD_sigma = SPECMOD_sigma[:,:,igas_order,:]
+
+    return SPECMODx,SPECMOD_sigma,BASELINEx,LOSDENS_TOT_PATH,VMR_apr,VMR_ret,VMR_reterr
 
 
 ###############################################################################################
@@ -890,7 +910,7 @@ def read_output(filename):
         "VCONV", "MEAS", "ERRMEAS",
         "SPECMOD_trace", "SPECMOD_sigma", "SPECMOD_background",
         "BASELINE", "ID", "ISO",
-        "VMR_ret", "VMR_reterr",
+        "VMR_apr", "VMR_ret", "VMR_reterr",
     ]
 
     with h5py.File(filename + ".h5", "r") as f:
